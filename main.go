@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"time"
+
+	"github.com/rivo/tview"
 )
 
 const (
@@ -25,6 +27,13 @@ func readInput(inputChan chan string) {
 }
 
 func main() {
+	box := tview.NewBox().SetBorder(true).SetTitle("Hello, world!")
+	if err := tview.NewApplication().SetRoot(box, true).Run(); err != nil {
+		panic(err)
+	}
+}
+
+func main2() {
 	fmt.Println("Starting Textorio...")
 	inputChan := make(chan string)
 	go readInput(inputChan)

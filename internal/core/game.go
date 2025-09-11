@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 )
+
 func NewGame() *Game {
 	return &Game{}
 }
@@ -16,13 +17,10 @@ func (g *Game) Update() {
 	}
 }
 
-func (g *Game) ProcessInput(input string) {
-	g.ProcessCommand(input)
-}
-func (g *Game) ProcessCommand(input string) {
+func (g *Game) ProcessCommand(input string) int {
 	parts := strings.Fields(strings.TrimSpace(input))
 	if len(parts) == 0 {
-		return
+		return 0
 	}
 	command := parts[0]
 	args := parts[1:]
@@ -35,9 +33,13 @@ func (g *Game) ProcessCommand(input string) {
 	case "craft":
 		if len(args) == 0 {
 			fmt.Println("Usage: craft <item_name>")
-			return
+			return -1
 		}
+	case "quit":
+		fmt.Println("Exiting...")
+		return -1
 	default:
 		fmt.Println("Unknown command. Type 'help' for a list of commands.")
 	}
+	return 1
 }

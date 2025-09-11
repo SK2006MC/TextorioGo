@@ -33,7 +33,7 @@ func main() {
 
 	var lastUpdateTime time.Time
 	var tickAccumulator time.Duration
-
+	var te, sec int64
 	lastUpdateTime = time.Now()
 
 	for {
@@ -45,13 +45,23 @@ func main() {
 		// This loop runs the game logic as many times as needed to catch up
 		for tickAccumulator >= TickRate {
 			game1.Update()
+			te++
+			//	fmt.Printf("Ticks: %d\r", te)
 			tickAccumulator -= TickRate
+			if te%60 == 0 {
+				sec++
+				fmt.Printf("Secs:%d\r", sec)
+			}
 		}
 
 		// Check for non-blocking user input
 		select {
 		case input := <-inputChan:
-			game1.ProcessInput(input)
+			r := game1.ProcessCommand(input)
+			if r == -1 {
+				//game1.Save()
+				return
+			}
 		default:
 			// No input, continue to the next tick
 		}

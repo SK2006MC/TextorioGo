@@ -14,13 +14,12 @@ import (
 const DefaultTickRate = time.Second / 60
 
 type UIConfig struct {
-	Title         string
-	Border        bool
+	Title           string
+	Border          bool
 	BackgroundColor tcell.Color
-	FlexDirection tview.FlexDirection
-	OutputHeight  int
-	InputHeight   int
-	InputWidth    int
+	OutputHeight    int
+	InputHeight     int
+	InputWidth      int
 }
 
 type GameUI struct {
@@ -28,6 +27,7 @@ type GameUI struct {
 	outputView *tview.TextView
 	inputField *tview.InputField
 	inputBox   *tview.Box
+	flex       *tview.Flex
 }
 
 type GameApp struct {
@@ -41,9 +41,8 @@ type GameApp struct {
 	tickRate     time.Duration
 }
 
-func NewGameApp(uiConfig UIConfig, tickRate time.Duration) *GameApp {
+func NewGameUI(uiConfig UIConfig) *GameUI {
 	app := tview.NewApplication()
-	game := core.NewGame()
 	outputView := tview.NewTextView()
 	inputField := tview.NewInputField().
 		SetLabel("Enter command: ").
@@ -54,19 +53,24 @@ func NewGameApp(uiConfig UIConfig, tickRate time.Duration) *GameApp {
 		SetBackgroundColor(uiConfig.BackgroundColor).
 		SetBorder(uiConfig.Border)
 
-	gui := &GameUI{
+	return &GameUI{
 		app:        app,
 		outputView: outputView,
 		inputField: inputField,
 		inputBox:   inputBox,
 	}
+}
 
+func NewGameApp(uiConfig UIConfig, tickRate time.Duration) *GameApp {
 	if tickRate == 0 {
 		tickRate = DefaultTickRate
 	}
 
+	gameUI := NewGameUI(uiConfig)
+	game := core.NewGame()
+
 	return &GameApp{
-		gui:          gui,
+		gui:          gameUI,
 		game:         game,
 		inputChan:    make(chan string),
 		lastTickTime: time.Now(),
@@ -76,32 +80,47 @@ func NewGameApp(uiConfig UIConfig, tickRate time.Duration) *GameApp {
 
 func (ga *GameApp) setupUI(uiConfig UIConfig) {
 	gui := ga.gui
-	gui.outputView.SetBorder(true).SetTitle("Game Output")
+	setupOutputView(gui)
+	setupInputField(gui, ga, uiConfig)
+	setupFlex(gui, uiConfig)
+	ga.gui.app.SetRoot(gui.flex, true)
+}
+
+func setupOutputView(gui *GameUI) {
+	gui.outputView.
+		SetBorder(true).
+		SetTitle("Game Output")
 	gui.outputView.SetChangedFunc(func() {
 		gui.app.Draw()
 	})
+}
 
+func setupInputField(gui *GameUI, ga *GameApp, uiConfig UIConfig) {
 	gui.inputField.SetDoneFunc(func(key tcell.Key) {
 		if key == tcell.KeyEnter {
-			command := gui.inputField.GetText()
-			if command != "" {
-				result := ga.game.ProcessCommand(command)
-				if result == -1 {
-					gui.app.Stop()
-					return
-				}
-				fmt.Fprintf(gui.outputView, "You entered: %s\n", command)
-				gui.inputField.SetText("")
-			}
+			handleInput(gui, ga)
 		}
 	}).SetBorder(true).SetTitle("Input")
+}
 
-	flex := tview.NewFlex().
-		SetDirection(uiConfig.FlexDirection).
-		AddItem(gui.outputView, 0, uiConfig.OutputHeight, false).
-		AddItem(gui.inputField, 0, uiConfig.InputHeight, true)
+func handleInput(gui *GameUI, ga *GameApp) {
+	command := gui.inputField.GetText()
+	if command != "" {
+		result := ga.game.ProcessCommand(command)
+		if result == -1 {
+			gui.app.Stop()
+			return
+		}
+		fmt.Fprintf(gui.outputView, "You entered: %s\n", command)
+		gui.inputField.SetText("")
+	}
+}
 
-	gui.app.SetRoot(flex, true)
+func setupFlex(gui *GameUI, uiConfig UIConfig) {
+	gui.flex = tview.NewFlex().
+		SetDirection(tview.FlexRow).
+		AddItem(gui.outputView, uiConfig.OutputHeight, 1, false).
+		AddItem(gui.inputField, uiConfig.InputHeight, 1, true)
 }
 
 func (ga *GameApp) runGameLoop() {
@@ -111,19 +130,26 @@ func (ga *GameApp) runGameLoop() {
 		ga.lastTickTime = currentTime
 		ga.tickAccum += elapsedTime
 
-		for ga.tickAccum >= ga.tickRate {
-			ga.game.Update()
-			ga.tickCount++
-			ga.tickAccum -= ga.tickRate
-
-			if ga.tickCount%60 == 0 {
-				ga.secondCount++
-				fmt.Fprintf(ga.gui.outputView, "Tick: %d, Sec: %d\r", ga.tickCount, ga.secondCount)
-			}
-		}
-
+		processTicks(ga)
 		time.Sleep(time.Millisecond)
 	}
+}
+
+func processTicks(ga *GameApp) {
+	for ga.tickAccum >= ga.tickRate {
+		ga.game.Update()
+		ga.tickCount++
+		ga.tickAccum -= ga.tickRate
+
+		if ga.tickCount%60 == 0 {
+			ga.secondCount++
+			updateOutputWithTickInfo(ga)
+		}
+	}
+}
+
+func updateOutputWithTickInfo(ga *GameApp) {
+	fmt.Fprintf(ga.gui.outputView, "Tick: %d, Sec: %d\r", ga.tickCount, ga.secondCount)
 }
 
 func (ga *GameApp) Run(uiConfig UIConfig) error {
@@ -133,17 +159,23 @@ func (ga *GameApp) Run(uiConfig UIConfig) error {
 }
 
 func main() {
-	uiConfig := UIConfig{
-		Title:         "Input",
-		Border:        true,
-		BackgroundColor: tcell.NewHexColor(0xff0000),
-		FlexDirection: tview.FlexRow,
-		OutputHeight:  3,
-		InputHeight:   1,
-		InputWidth:    30,
-	}
+	uiConfig := createDefaultUIConfig()
+	gameApp := NewGameApp(uiConfig, 0)
+	runApplication(gameApp, uiConfig)
+}
 
-	gameApp := NewGameApp(uiConfig, 0) // Use default tick rate
+func createDefaultUIConfig() UIConfig {
+	return UIConfig{
+		Title:           "Input",
+		Border:          true,
+		BackgroundColor: tcell.NewHexColor(0xff0000),
+		OutputHeight:    3,
+		InputHeight:     1,
+		InputWidth:      30,
+	}
+}
+
+func runApplication(gameApp *GameApp, uiConfig UIConfig) {
 	if err := gameApp.Run(uiConfig); err != nil {
 		fmt.Fprintf(os.Stderr, "Error running application: %v\n", err)
 		os.Exit(1)

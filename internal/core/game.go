@@ -5,8 +5,25 @@ import (
 	"strings"
 )
 
+type Game struct {
+	activeEntities []BaseE
+	output1        string
+	name           string
+	player         Player
+	gmap           Map
+	tickElapsed    int64
+	pr             Production
+	lrecipes       []Recipe
+	litems         []Item
+	lbuildings     []Building
+}
+
 func NewGame() *Game {
 	return &Game{}
+}
+
+func (g *Game) Write(msg string) {
+
 }
 
 func (g *Game) Update() {
@@ -15,6 +32,17 @@ func (g *Game) Update() {
 		e.Update()
 		uds += i
 	}
+}
+
+func (g *Game) Save(filename string) error {
+	// Implement save functionality here use binary serialization
+	return nil
+}
+
+func (g *Game) Load(filename string) error {
+	// Implement load functionality here use binary serialization
+
+	return nil
 }
 
 func (g *Game) ProcessCommand(input string) int {

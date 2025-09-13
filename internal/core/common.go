@@ -56,18 +56,6 @@ type Building struct {
 	BaseE
 }
 
-type Game struct {
-	activeEntities []BaseE
-	name           string
-	player         Player
-	gmap           Map
-	tickElapsed    int64
-	pr             Production
-	lrecipes       []Recipe
-	litems         []Item
-	lbuildings     []Building
-}
-
 func (b *BaseE) Update() {
 
 }

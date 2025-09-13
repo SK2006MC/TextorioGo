@@ -1,3 +1,4 @@
+```go
 package main
 
 import (
@@ -23,27 +24,8 @@ func readInput(inputChan chan string) {
 	}
 }
 
-func SetupTextInputArea(app *tview.Application, inputChan chan string) *tview.InputField {
-	inputField := tview.NewInputField().
-		SetLabel("Enter command: ").
-		SetFieldWidth(30)
-
-	inputField.SetDoneFunc(func(key tcell.Key) {
-		if key == tcell.KeyEnter {
-			command := inputField.GetText()
-			if command != "" {
-				inputChan <- command
-				inputField.SetText("")
-			}
-		}
-	})
-
-	return inputField
-}
-
 func main() {
 	app := tview.NewApplication()
-
 	textView := tview.NewTextView().SetChangedFunc(func() {
 		app.Draw()
 	})
@@ -57,9 +39,7 @@ func main() {
 		if key == tcell.KeyEnter {
 			command := inputField.GetText()
 			if command != "" {
-				//textView.Write([]byte(fmt.Sprintf("You entered: %s\n", command)))
-				//use fmt.Fprintf to write to TextView
-				fmt.Fprintf(textView, "You entered: %s\n", command)
+				textView.Write([]byte(fmt.Sprintf("You entered: %s\n", command)))
 				inputField.SetText("")
 			}
 		}
@@ -75,8 +55,8 @@ func main() {
 }
 
 func runGameLoop(output *tview.TextView) {
-	//inputChan := make(chan string)
-	//go readInput(inputChan)
+	inputChan := make(chan string)
+	go readInput(inputChan)
 	game := core.NewGame()
 
 	var lastUpdateTime time.Time
@@ -93,26 +73,25 @@ func runGameLoop(output *tview.TextView) {
 		for tickAccumulator >= TickRate {
 			game.Update()
 			tickCount++
-			//output.Write([]byte(fmt.Sprintf("Tick: %d\r", tickCount)))
-			//fmt.Fprintf(output, "Tick: %d\r", tickCount)
+			output.Write([]byte(fmt.Sprintf("Tick: %d\r", tickCount)))
 			tickAccumulator -= TickRate
 
 			if tickCount%60 == 0 {
 				secondCount++
-				//output.Write([]byte(fmt.Sprintf("Sec: %d\r", secondCount)))
-				fmt.Fprintf(output, "Sec: %d\r", secondCount)
+				output.Write([]byte(fmt.Sprintf("Sec: %d\r", secondCount)))
 			}
 		}
 
-		//select {
-		//case input := <-inputChan:
-		//	result := game.ProcessCommand(input)
-		//	if result == -1 {
-		//		return
-		//	}
-		//default:
-		//}
+		select {
+		case input := <-inputChan:
+			result := game.ProcessCommand(input)
+			if result == -1 {
+				return
+			}
+		default:
+		}
 
 		time.Sleep(time.Millisecond)
 	}
 }
+```

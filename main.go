@@ -19,8 +19,7 @@ type UIConfig struct {
 	Border          bool
 	BackgroundColor tcell.Color
 	OutputHeight    int
-	InputHeight     int
-	InputWidth      int
+	InputHxW        *core.Vec2 //X and Y
 }
 
 type GameUI struct {
@@ -76,7 +75,9 @@ func NewGameApp(uiConfig UIConfig, tickRate time.Duration) *GameApp {
 
 func (ga *GameApp) setupUI(uiConfig UIConfig) {
 	gui := ga.gui
-	gui.outputView.SetBorder(true).SetTitle("Game Output")
+	gui.outputView.
+		SetBorder(true).
+		SetTitle("Game Output")
 	gui.outputView.SetChangedFunc(func() {
 		gui.app.Draw()
 	})

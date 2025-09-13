@@ -11,64 +11,97 @@ import (
 	"github.com/rivo/tview"
 )
 
-const TickRate = time.Second / 60
+const DefaultTickRate = time.Second / 60
+
+type UIConfig struct {
+	Title         string
+	Border        bool
+	BackgroundColor tcell.Color
+	FlexDirection tview.FlexDirection
+	OutputHeight  int
+	InputHeight   int
+	InputWidth    int
+}
+
+type GameUI struct {
+	app        *tview.Application
+	outputView *tview.TextView
+	inputField *tview.InputField
+	inputBox   *tview.Box
+}
 
 type GameApp struct {
-	app          *tview.Application
+	gui          *GameUI
 	game         *core.Game
-	outputView   *tview.TextView
-	inputField   *tview.InputField
 	inputChan    chan string
 	lastTickTime time.Time
 	tickAccum    time.Duration
 	tickCount    int64
 	secondCount  int64
+	tickRate     time.Duration
 }
 
-func NewGameApp() *GameApp {
+func NewGameApp(uiConfig UIConfig, tickRate time.Duration) *GameApp {
 	app := tview.NewApplication()
 	game := core.NewGame()
 	outputView := tview.NewTextView()
 	inputField := tview.NewInputField().
 		SetLabel("Enter command: ").
-		SetFieldWidth(30)
+		SetFieldWidth(uiConfig.InputWidth)
 
-	return &GameApp{
+	inputBox := tview.NewBox().
+		SetTitle(uiConfig.Title).
+		SetBackgroundColor(uiConfig.BackgroundColor).
+		SetBorder(uiConfig.Border)
+
+	gui := &GameUI{
 		app:        app,
-		game:       game,
 		outputView: outputView,
 		inputField: inputField,
-		inputChan:  make(chan string),
+		inputBox:   inputBox,
+	}
+
+	if tickRate == 0 {
+		tickRate = DefaultTickRate
+	}
+
+	return &GameApp{
+		gui:          gui,
+		game:         game,
+		inputChan:    make(chan string),
 		lastTickTime: time.Now(),
+		tickRate:     tickRate,
 	}
 }
 
-func (ga *GameApp) setupUI() {
-	ga.outputView.SetBorder(true).SetTitle("Game Output")
-	ga.outputView.SetChangedFunc(func() {
-		ga.app.Draw()
+func (ga *GameApp) setupUI(uiConfig UIConfig) {
+	gui := ga.gui
+	gui.outputView.SetBorder(true).SetTitle("Game Output")
+	gui.outputView.SetChangedFunc(func() {
+		gui.app.Draw()
 	})
 
-	ga.inputField.SetDoneFunc(func(key tcell.Key) {
+	gui.inputField.SetDoneFunc(func(key tcell.Key) {
 		if key == tcell.KeyEnter {
-			command := ga.inputField.GetText()
+			command := gui.inputField.GetText()
 			if command != "" {
 				result := ga.game.ProcessCommand(command)
 				if result == -1 {
-					ga.app.Stop()
+					gui.app.Stop()
 					return
 				}
-				fmt.Fprintf(ga.outputView, "You entered: %s\n", command)
-				ga.inputField.SetText("")
+				fmt.Fprintf(gui.outputView, "You entered: %s\n", command)
+				gui.inputField.SetText("")
 			}
 		}
-	})
+	}).SetBorder(true).SetTitle("Input")
 
 	flex := tview.NewFlex().
-		AddItem(ga.outputView, 0, 1, false).
-		AddItem(ga.inputField, 1, 0, true)
+		SetDirection(uiConfig.FlexDirection).
+		AddItem(gui.outputView, 0, uiConfig.OutputHeight, false).
+		AddItem(gui.inputField, 0, uiConfig.InputHeight, true)
 
-	ga.app.SetRoot(flex, true)
+	gui.app.SetRoot(flex, true)
 }
 
 func (ga *GameApp) runGameLoop() {
@@ -78,14 +111,14 @@ func (ga *GameApp) runGameLoop() {
 		ga.lastTickTime = currentTime
 		ga.tickAccum += elapsedTime
 
-		for ga.tickAccum >= TickRate {
+		for ga.tickAccum >= ga.tickRate {
 			ga.game.Update()
 			ga.tickCount++
-			ga.tickAccum -= TickRate
+			ga.tickAccum -= ga.tickRate
 
 			if ga.tickCount%60 == 0 {
 				ga.secondCount++
-				fmt.Fprintf(ga.outputView, "Tick: %d, Sec: %d\r", ga.tickCount, ga.secondCount)
+				fmt.Fprintf(ga.gui.outputView, "Tick: %d, Sec: %d\r", ga.tickCount, ga.secondCount)
 			}
 		}
 
@@ -93,15 +126,25 @@ func (ga *GameApp) runGameLoop() {
 	}
 }
 
-func (ga *GameApp) Run() error {
-	ga.setupUI()
+func (ga *GameApp) Run(uiConfig UIConfig) error {
+	ga.setupUI(uiConfig)
 	go ga.runGameLoop()
-	return ga.app.Run()
+	return ga.gui.app.Run()
 }
 
 func main() {
-	gameApp := NewGameApp()
-	if err := gameApp.Run(); err != nil {
+	uiConfig := UIConfig{
+		Title:         "Input",
+		Border:        true,
+		BackgroundColor: tcell.NewHexColor(0xff0000),
+		FlexDirection: tview.FlexRow,
+		OutputHeight:  3,
+		InputHeight:   1,
+		InputWidth:    30,
+	}
+
+	gameApp := NewGameApp(uiConfig, 0) // Use default tick rate
+	if err := gameApp.Run(uiConfig); err != nil {
 		fmt.Fprintf(os.Stderr, "Error running application: %v\n", err)
 		os.Exit(1)
 	}

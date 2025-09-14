@@ -34,7 +34,6 @@ type GameUI struct {
 	outputView *tview.TextView
 	inputField *tview.InputField
 	button     *tview.Button
-	flex       *tview.Flex
 	outputFlex *tview.Flex
 	game       *core.Game
 }
@@ -42,7 +41,6 @@ type GameUI struct {
 type GameApp struct {
 	gui          *GameUI
 	game         *core.Game
-	inputChan    chan string
 	lastTickTime time.Time
 	tickAccum    time.Duration
 	tickCount    int64
@@ -137,7 +135,6 @@ func NewGameApp(uiConfig UIConfig, tickRate time.Duration) *GameApp {
 	return &GameApp{
 		gui:          gameUI,
 		game:         game,
-		inputChan:    make(chan string),
 		lastTickTime: time.Now(),
 		tickRate:     tickRate,
 	}

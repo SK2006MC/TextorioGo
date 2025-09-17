@@ -11,8 +11,7 @@ import (
 )
 
 const (
-	defaultTickRate   = time.Second / 60
-	fpsUpdateInterval = 1 * time.Second
+	defaultTickRate = time.Second / 60
 )
 
 type Dimensions struct {
@@ -34,7 +33,6 @@ type GameUI struct {
 	inputField *tview.InputField
 	button     *tview.Button
 	outputFlex *tview.Flex
-	game       *core.Game
 }
 
 type GameApp struct {
@@ -72,26 +70,7 @@ func (gui *GameUI) SetupUI(uiConfig UIConfig) {
 
 	gui.inputField.
 		SetLabel("Enter command: ").
-		SetFieldWidth(uiConfig.InputDim.Width).
-		SetDoneFunc(func(key tcell.Key) {
-			if key == tcell.KeyEnter {
-				command := gui.inputField.GetText()
-				if command != "" {
-					gui.ProcessCommand(command)
-					gui.inputField.SetText("")
-				}
-			}
-		}).
-		SetBorder(true).
-		SetTitle("Input")
-
-	gui.button.SetSelectedFunc(func() {
-		command := gui.inputField.GetText()
-		if command != "" {
-			gui.ProcessCommand(command)
-			gui.inputField.SetText("")
-		}
-	})
+		SetFieldWidth(uiConfig.InputDim.Width)
 
 	inputFlex := tview.NewFlex().
 		SetDirection(tview.FlexColumn).
@@ -106,13 +85,13 @@ func (gui *GameUI) SetupUI(uiConfig UIConfig) {
 	gui.app.SetRoot(gui.outputFlex, true)
 }
 
-func (gui *GameUI) ProcessCommand(command string) {
-	result := gui.game.ProcessCommand(command)
+func (gApp *GameApp) ProcessCommand(command string) {
+	result := gApp.game.ProcessCommand(command)
 	if result == -1 {
-		gui.app.Stop()
+		gApp.gui.app.Stop()
 		return
 	}
-	fmt.Fprintf(gui.outputView, "You entered: %s\n", command)
+	fmt.Fprintf(gApp.gui.outputView, "You entered: %s\n", command)
 }
 
 func (gui *GameUI) UpdateOutput(message string) {
@@ -129,7 +108,6 @@ func NewGameApp(uiConfig UIConfig, tickRate time.Duration) *GameApp {
 	game := core.NewGame()
 
 	gameUI.SetupUI(uiConfig)
-	gameUI.game = game
 
 	return &GameApp{
 		gui:          gameUI,

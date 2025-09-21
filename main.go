@@ -6,6 +6,8 @@ import (
 	"os"
 )
 
+// main is the entry point of the application.
+// It creates a default UI configuration, initializes a new game application, and runs it.
 func main() {
 	uiConfig := tview.CreateDefaultUIConfig()
 	gameApp := tview.NewGameApp(uiConfig, 0)

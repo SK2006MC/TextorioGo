@@ -1,5 +1,7 @@
 package core
 
+var iid int = 0
+
 type Vec2 struct {
 	X, Y float64
 }
@@ -9,32 +11,15 @@ func (v Vec2) Add(o Vec2) Vec2 {
 }
 
 type Task struct {
+	run interface {
+	}
 }
 
 type BaseE struct {
 	t Task
 }
 
-type Item struct {
-	name     string
-	id       int
-	maxstack int
-}
-
-type Recipe struct {
-	id     int
-	input  Item
-	output Item
-}
-
 type Production struct {
-}
-
-type Inventory struct {
-}
-
-type Player struct {
-	BaseE
 }
 
 type RType struct {

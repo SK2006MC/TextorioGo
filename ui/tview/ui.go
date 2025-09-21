@@ -3,6 +3,7 @@ package tview
 import (
 	"Textorio/config"
 	"Textorio/internal/core"
+	"Textorio/ui"
 
 	"fmt"
 	"time"
@@ -11,17 +12,14 @@ import (
 	"github.com/rivo/tview"
 )
 
-type Dimensions struct {
-	Height int
-	Width  int
-}
+type Dimensions = ui.Dimensions
 
 type UIConfig struct {
 	Title           string
 	Border          bool
-	BackgroundColor tcell.Color
 	OutputDim       Dimensions
 	InputDim        Dimensions
+	BackgroundColor tcell.Color
 }
 
 type GameUI struct {

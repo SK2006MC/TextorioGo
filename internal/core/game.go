@@ -1,21 +1,24 @@
 package core
 
 import (
+	"bytes"
+	"encoding/gob"
 	"fmt"
+	"os"
 	"strings"
 )
 
 type Game struct {
 	activeEntities []BaseE
-	output1        string
-	name           string
-	player         Player
 	gmap           Map
-	tickElapsed    int64
-	pr             Production
-	lrecipes       []Recipe
-	litems         []Item
 	lbuildings     []Building
+	litems         []Item
+	lrecipes       []Recipe
+	name           string
+	output1        string
+	player         Player
+	pr             Production
+	tickElapsed    int64
 }
 
 func NewGame() *Game {
@@ -35,13 +38,33 @@ func (g *Game) Update() {
 }
 
 func (g *Game) Save(filename string) error {
-	// Implement save functionality here use binary serialization
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	err := enc.Encode(g)
+	if err != nil {
+		fmt.Println("Error encoding game state:", err)
+	}
+	err = os.WriteFile(filename, buf.Bytes(), 0644)
+	if err != nil {
+		fmt.Println("Error writing save file:", err)
+		return err
+	}
 	return nil
 }
 
 func (g *Game) Load(filename string) error {
-	// Implement load functionality here use binary serialization
-
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		fmt.Println("Error reading save file:", err)
+		return err
+	}
+	buf := bytes.NewBuffer(data)
+	dec := gob.NewDecoder(buf)
+	err = dec.Decode(g)
+	if err != nil {
+		fmt.Println("Error decoding game state:", err)
+		return err
+	}
 	return nil
 }
 

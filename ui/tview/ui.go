@@ -12,16 +12,24 @@ import (
 	"github.com/rivo/tview"
 )
 
+// Dimensions is an alias for the ui.Dimensions struct.
 type Dimensions = ui.Dimensions
 
+// UIConfig holds the configuration for the UI.
 type UIConfig struct {
+	// Title is the title of the UI window.
 	Title           string
+	// Border is a flag indicating whether the UI should have a border.
 	Border          bool
+	// OutputDim is the dimensions of the output view.
 	OutputDim       Dimensions
+	// InputDim is the dimensions of the input view.
 	InputDim        Dimensions
+	// BackgroundColor is the background color of the UI.
 	BackgroundColor tcell.Color
 }
 
+// GameUI holds the tview UI components for the game.
 type GameUI struct {
 	app        *tview.Application
 	outputView *tview.TextView
@@ -30,6 +38,7 @@ type GameUI struct {
 	outputFlex *tview.Flex
 }
 
+// GameApp is the main application struct, holding the UI, game state, and timing information.
 type GameApp struct {
 	gui          *GameUI
 	game         *core.Game
@@ -40,6 +49,7 @@ type GameApp struct {
 	tickRate     time.Duration
 }
 
+// NewGameUI creates and returns a new GameUI instance.
 func NewGameUI() *GameUI {
 	app := tview.NewApplication()
 	outputView := tview.NewTextView()
@@ -54,6 +64,7 @@ func NewGameUI() *GameUI {
 	}
 }
 
+// SetupUI configures the UI components based on the provided UIConfig.
 func (gui *GameUI) SetupUI(uiConfig UIConfig) {
 	gui.outputView.
 		SetBorder(true).
@@ -79,6 +90,8 @@ func (gui *GameUI) SetupUI(uiConfig UIConfig) {
 
 	gui.app.SetRoot(gui.outputFlex, true)
 }
+
+// ProcessCommand processes a command string entered by the player.
 func (gApp *GameApp) ProcessCommand(command string) {
 	result := gApp.game.ProcessCommand(command)
 	if result == -1 {
@@ -88,11 +101,13 @@ func (gApp *GameApp) ProcessCommand(command string) {
 	fmt.Fprintf(gApp.gui.outputView, "You entered: %s\n", command)
 }
 
+// UpdateOutput updates the game's output view with a new message.
 func (gui *GameUI) UpdateOutput(message string) {
 	fmt.Fprintf(gui.outputView, "%s\r", message)
 	gui.app.Draw()
 }
 
+// NewGameApp creates and returns a new GameApp instance.
 func NewGameApp(uiConfig UIConfig, tickRate time.Duration) *GameApp {
 	if tickRate == 0 {
 		tickRate = config.DefaultTickRate
@@ -111,6 +126,7 @@ func NewGameApp(uiConfig UIConfig, tickRate time.Duration) *GameApp {
 	}
 }
 
+// runGameLoop starts the main game loop, which runs on a ticker.
 func (ga *GameApp) runGameLoop() {
 	ticker := time.NewTicker(ga.tickRate)
 	defer ticker.Stop()
@@ -126,16 +142,19 @@ func (ga *GameApp) runGameLoop() {
 	}
 }
 
+// updateOutputWithTickInfo updates the output view with the current tick and second count.
 func (ga *GameApp) updateOutputWithTickInfo() {
 	message := fmt.Sprintf("Tick: %d, Sec: %d", ga.tickCount, ga.secondCount)
 	ga.gui.UpdateOutput(message)
 }
 
+// Run starts the application, including the game loop and the tview application.
 func (ga *GameApp) Run() error {
 	go ga.runGameLoop()
 	return ga.gui.app.Run()
 }
 
+// CreateDefaultUIConfig creates and returns a default UIConfig.
 func CreateDefaultUIConfig() UIConfig {
 	return UIConfig{
 		Title:           "Input",

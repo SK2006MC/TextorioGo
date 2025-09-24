@@ -7,14 +7,14 @@ type Inventory struct {
 	items     Items
 }
 
+
+// IsSpaceLeft checks if there is enough space in the inventory for a given count of items.
+// It returns true if there is space, and false otherwise.
 // IsSpaceLeft is intended to check if there is enough space in the inventory for a given count of items.
 // It should return true if there is space, and false otherwise.
-// TODO: This function has a logic bug. It currently returns false when there is space, and true when there is not.
+
 func (i *Inventory) IsSpaceLeft(c int) bool {
-	if i.usedspace+c <= i.capacity {
-		return false
-	}
-	return true
+	return i.usedspace+c <= i.capacity
 }
 
 // Has checks if the inventory contains at least a given count of a specific item.

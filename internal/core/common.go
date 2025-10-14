@@ -1,7 +1,5 @@
 package core
 
-var iid int = 0
-
 // Vec2 represents a 2D vector with X and Y coordinates.
 type Vec2 struct {
 	// X is the x-coordinate of the vector.
@@ -17,8 +15,7 @@ func (v Vec2) Add(o Vec2) Vec2 {
 
 // Task represents a task to be performed by a game entity.
 type Task struct {
-	run interface {
-	}
+	run any
 }
 
 // BaseE is the base struct for all entities in the game.
@@ -26,8 +23,12 @@ type BaseE struct {
 	t Task
 }
 
-// Production represents the production state of a building or the player.
+// Production represents the factorio line chart data.
 type Production struct {
+	ItemsProduced []int64
+	ItemsUsed     []int64
+	ItemsWasted   []int64
+	PowerProduced []int64
 }
 
 // RType represents a type of resource.
@@ -40,12 +41,6 @@ type RPatch struct {
 	size  Vec2
 	itype RType
 	rleft int64
-}
-
-// Map represents the game map, including its size and resource patches.
-type Map struct {
-	size Vec2
-	rps  []RPatch
 }
 
 // Building represents a building in the game.

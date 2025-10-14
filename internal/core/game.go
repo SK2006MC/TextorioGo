@@ -5,13 +5,12 @@ import (
 	"encoding/gob"
 	"fmt"
 	"os"
-	"strings"
 )
 
 // Game represents the main game state, including all entities, the map, and player information.
 type Game struct {
 	activeEntities []BaseE
-	gmap           Map
+	gmap           *Map
 	lbuildings     []Building
 	litems         []Item
 	lrecipes       []Recipe
@@ -19,12 +18,14 @@ type Game struct {
 	output1        string
 	player         Player
 	pr             Production
-	tickElapsed    int64
+	TicksElapsed   int64
 }
 
 // NewGame creates and returns a new Game instance.
 func NewGame() *Game {
-	return &Game{}
+	return &Game{
+		gmap: NewMap(Vec2{100, 100}),
+	}
 }
 
 // Write sends a message to the game's output.
@@ -75,33 +76,4 @@ func (g *Game) Load(filename string) error {
 		return err
 	}
 	return nil
-}
-
-// ProcessCommand processes a command string entered by the player.
-// It returns 0 if the command is empty, -1 if the command is to quit, and 1 otherwise.
-func (g *Game) ProcessCommand(input string) int {
-	parts := strings.Fields(strings.TrimSpace(input))
-	if len(parts) == 0 {
-		return 0
-	}
-	command := parts[0]
-	args := parts[1:]
-
-	switch command {
-	case "help":
-		fmt.Println("")
-	case "inv":
-		fmt.Println("")
-	case "craft":
-		if len(args) == 0 {
-			fmt.Println("Usage: craft <item_name>")
-			return -1
-		}
-	case "quit":
-		fmt.Println("Exiting...")
-		return -1
-	default:
-		fmt.Println("Unknown command. Type 'help' for a list of commands.")
-	}
-	return 1
 }

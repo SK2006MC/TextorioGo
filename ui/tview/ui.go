@@ -4,8 +4,10 @@ import (
 	"Textorio/config"
 	"Textorio/internal/core"
 	"Textorio/ui"
+	"os"
 
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -18,13 +20,13 @@ type Dimensions = ui.Dimensions
 // UIConfig holds the configuration for the UI.
 type UIConfig struct {
 	// Title is the title of the UI window.
-	Title           string
+	Title string
 	// Border is a flag indicating whether the UI should have a border.
-	Border          bool
+	Border bool
 	// OutputDim is the dimensions of the output view.
-	OutputDim       Dimensions
+	OutputDim Dimensions
 	// InputDim is the dimensions of the input view.
-	InputDim        Dimensions
+	InputDim Dimensions
 	// BackgroundColor is the background color of the UI.
 	BackgroundColor tcell.Color
 }
@@ -55,6 +57,9 @@ func NewGameUI() *GameUI {
 	outputView := tview.NewTextView()
 	inputField := tview.NewInputField()
 	button := tview.NewButton("Process Command")
+	button.SetBackgroundColor(tcell.ColorGreen).
+		SetBorderColor(tcell.ColorDarkRed).
+		SetTitleColor(tcell.ColorDarkGreen)
 
 	return &GameUI{
 		app:        app,
@@ -70,13 +75,16 @@ func (gui *GameUI) SetupUI(uiConfig UIConfig) {
 		SetBorder(true).
 		SetTitle("Game Output").
 		SetBackgroundColor(uiConfig.BackgroundColor)
+
 	gui.outputView.SetChangedFunc(func() {
 		gui.app.Draw()
 	})
 
 	gui.inputField.
 		SetLabel("Enter command: ").
-		SetFieldWidth(uiConfig.InputDim.Width)
+		SetPlaceholder("move 0 0").
+		SetFieldWidth(uiConfig.InputDim.Width).
+		SetFieldBackgroundColor(tcell.ColorDarkGrey)
 
 	inputFlex := tview.NewFlex().
 		SetDirection(tview.FlexColumn).
@@ -91,19 +99,43 @@ func (gui *GameUI) SetupUI(uiConfig UIConfig) {
 	gui.app.SetRoot(gui.outputFlex, true)
 }
 
+func (gui *GameUI) Print(msg string) {
+	fmt.Fprintf(gui.outputView, msg)
+}
+
 // ProcessCommand processes a command string entered by the player.
-func (gApp *GameApp) ProcessCommand(command string) {
-	result := gApp.game.ProcessCommand(command)
-	if result == -1 {
-		gApp.gui.app.Stop()
-		return
+// It returns 0 if the command is empty, -1 if the command is to quit, and 1 otherwise.
+func (gApp *GameApp) ProcessCommand(input string) int {
+	gui := gApp.gui
+	parts := strings.Fields(strings.TrimSpace(input))
+	if len(parts) == 0 {
+		return 0
 	}
-	fmt.Fprintf(gApp.gui.outputView, "You entered: %s\n", command)
+	command := parts[0]
+	args := parts[1:]
+
+	switch command {
+	case "help":
+	case "inv":
+	case "craft":
+		if len(args) == 0 {
+			gui.Print("Usage: craft <item_name>")
+			return 1
+		}
+	case "quit":
+		gui.Print("Exiting...")
+		os.Exit(1)
+	default:
+		msg := "Unknown command. Type 'help' for a list of commands."
+		gui.Print(msg)
+	}
+	return 1
 }
 
 // UpdateOutput updates the game's output view with a new message.
 func (gui *GameUI) UpdateOutput(message string) {
-	fmt.Fprintf(gui.outputView, "%s\r", message)
+	gui.outputView.Clear()
+	gui.Print(fmt.Sprintf("%s\n", message))
 	gui.app.Draw()
 }
 
@@ -126,13 +158,28 @@ func NewGameApp(uiConfig UIConfig, tickRate time.Duration) *GameApp {
 	}
 }
 
+func setUpProcessCmd(game *GameApp) {
+	gameUI := game.gui
+	gameUI.inputField.SetDoneFunc(func(key tcell.Key) {
+		switch key {
+		case tcell.KeyEnter:
+			command := gameUI.inputField.GetText()
+			gameUI.inputField.SetText("")
+			game.ProcessCommand(command)
+		case tcell.KeyESC:
+			gameUI.inputField.SetText("")
+		}
+	})
+}
+
 // runGameLoop starts the main game loop, which runs on a ticker.
 func (ga *GameApp) runGameLoop() {
+	setUpProcessCmd(ga)
 	ticker := time.NewTicker(ga.tickRate)
 	defer ticker.Stop()
-
+	game := ga.game
 	for range ticker.C {
-		ga.game.Update()
+		game.Update()
 		ga.tickCount++
 
 		if ga.tickCount%60 == 0 {
@@ -151,7 +198,7 @@ func (ga *GameApp) updateOutputWithTickInfo() {
 // Run starts the application, including the game loop and the tview application.
 func (ga *GameApp) Run() error {
 	go ga.runGameLoop()
-	return ga.gui.app.Run()
+	return ga.gui.app.EnableMouse(true).EnablePaste(true).Run()
 }
 
 // CreateDefaultUIConfig creates and returns a default UIConfig.

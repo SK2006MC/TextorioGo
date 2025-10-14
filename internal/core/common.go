@@ -33,14 +33,14 @@ type Production struct {
 
 // RType represents a type of resource.
 type RType struct {
-	name string
+	Name string
 }
 
 // RPatch represents a resource patch on the game map.
 type RPatch struct {
-	size  Vec2
-	itype RType
-	rleft int64
+	Size  Vec2
+	IType RType
+	RLeft int64
 }
 
 // Building represents a building in the game.
